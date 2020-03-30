@@ -33,22 +33,31 @@ trait Matrix {
 
 
       override def toString(): String = {
-     	      var string: String = s"\n"
-	      val space = if (nrow > 10) {""} else {" "}
-	      val ndash = if (nrow > 10) {2} else {4}
-	      val sep = "" + "-"*ndash*(nrow-1) + "-"*(ndash-1) + "\n"
-	      
-     	      for (y <- 0 to (dimY - 1)){
-	      	  //since M can be any type we need to convert each
-		  //element to string before proceding with the reduce
-	      	  var row = matrix(y) map    (_.toString) reduce (_ + space + "|" + space + _)
-		  string = if (y != dimY - 1){
-		  	      	 string + space + row + space + "\n" + sep
-			   }else {
-			   	 string + space + row + space + "\n"
-			   }
-	      }
-	      string
+      /*
+      will print matrix like:
+      
+      	   	 val|val|val
+      	   	 -----------
+		 val|val|val
+		 -----------
+		 val|val|val
+      */
+	 var string: String = s"\n"
+	 val space = if (nrow > 10) {""} else {" "}
+	 val ndash = if (nrow > 10) {2} else {4}
+	 val sep = "" + "-"*ndash*(nrow-1) + "-"*(ndash-1) + "\n"
+	     
+     	 for (y <- 0 to (dimY - 1)){
+	     //since M can be any type we need to convert each
+	     //element to string before proceding with the reduce
+	     var row = matrix(y) map    (_.toString) reduce (_ + space + "|" + space + _)
+	     string = if (y != dimY - 1){
+	      	      	      string + space + row + space + "\n" + sep
+		 	} else {
+			      string + space + row + space + "\n"
+			}
+	 }
+	 string
 		  
      }
 }
@@ -63,8 +72,10 @@ case class World(dimY: Int, dimX: Int) extends Matrix {
      update(dimY/2, dimX/2)("X") //This is the Treasure
 
      //Need to adjust the walls later
-     val walls = Seq[(Int,Int)]((1,1),(4,4),(6,6))
-
+     val walls = Seq[(Int,Int)]((dimY/2-1,dimX/2),
+				(dimY/2,dimX/2-1),
+				(dimY/2,dimX/2+1))
+     
      def wall_adder(walls: Seq[(Int,Int)]): Unit = {
 	 for (w <- walls){
 	     w match {
@@ -72,8 +83,19 @@ case class World(dimY: Int, dimX: Int) extends Matrix {
 	     }
 	 }
      }
+     if(nrow>5 & ncol>5) {wall_adder(walls)}
 
-     def move(how: String, char: String): Int = {
+     def randomUpdate(value: M): Unit = {
+     	 val y = Random.nextInt(nrow - 1)
+	 val x = Random.nextInt(ncol - 1)
+     	 if (at(y,x) == " ") {update(y,x)(value)} else {randomUpdate(value)}
+     }
+     def move(how: String, char: M): Int = {
+     	 /* Return an integer representing the specific case
+	 that occured, used by the agent to decide the reward
+	 or understand that an error occured
+	 */
+	 
      	 var (y, x): (Int,Int) = where(char)
      	 val res: Int = how match {
 	     case "up"    => y match {
@@ -138,6 +160,7 @@ case class World(dimY: Int, dimX: Int) extends Matrix {
      }
 
      def eatAt(y: Int, x: Int, eater: String): Unit = {
+     //Simply an update with a extra checking
      	 assert(at(y,x) != " " && at(y,x) != "W",
 	 	s"$eater tried to eat emptiness or a Wall! at ($y, $x)") 
 	 update(y,x)(eater)
@@ -146,8 +169,9 @@ case class World(dimY: Int, dimX: Int) extends Matrix {
      def reset(): Unit = {
      	 for (y <- 0 to dimY_1){
 	     for (x <- 0 to dimX_1){update(y,x)(" ")}
-	 } 
-	 update(dimY/2, dimX/2)("X") //This is the Treasure
+	 }
+	 if(nrow>5 & ncol>5) {wall_adder(walls)}
+	 update(dimY/2, dimX/2)("X") 
      }
 }
 

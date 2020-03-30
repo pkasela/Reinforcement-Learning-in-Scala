@@ -1,6 +1,6 @@
 package gridworld.qmatrix
 
-abstract class QMatrix{
+abstract class QValHolder{
 /*
 This abstract class defines the basic structure that any Q value holder you
 implement should have to work: i.e. functions such as getQval and updateQval
@@ -14,15 +14,20 @@ For details see the QMap class description.
 	 type Move
 	 protected val QMatrix: T
 	 /*
-	  anything datastructure that holds the Qvals
+	  any datastructure that holds the Qvals
 	  it could be also be a Neural Network... and it shouldn't be
-	  acceced from outside!
+	  accessed from outside!
 	 */
 
 	 /*
 	 you can override the following as public if you want to!
-	 I prefer to create a companion function with easily
-	 understandable parameters see QMap example
+	 It's recommended to create a companion function with easily
+	 understandable parameters see QMap example because sometimes
+	 the states representation can be intimidating
+	 For example in a complex driving system a state can be represented
+	 with a lot of positional indicator it is easier to let user say
+	 getBestQval(object) and implement it's conversion to getBestQval(state)
+	 inside the latter.
 	 */
 	 protected def getQval(state: State, move: Move): Double
 	 protected def updateQval(state: State, move: Move)(Qval: Double): Unit
@@ -30,7 +35,7 @@ For details see the QMap class description.
 	 protected def getBestQval(state: State): Double
 }
 
-case class QMap(dimY: Int, dimX: Int, nmoves: Int) extends QMatrix {
+case class QMap(dimY: Int, dimX: Int, nmoves: Int) extends QValHolder {
 /*
 Example implementation of the QMatrix with mutable Map structure,
 the State is defined by a String given by a string concatenation of

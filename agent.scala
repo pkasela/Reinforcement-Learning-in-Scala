@@ -4,11 +4,41 @@ import gridworld.world._
 import gridworld.qmatrix._
 import scala.util.Random
 
-case class Agent(char :String, dim: Int){
+trait Q_Agent {
+     type Move
+     //Which type the moves should be (Int, String, Strange Objects, functions)
+
+     val QVals: QValHolder
+
+     def move(which: Move): Double //should return the reward
+     def reset(): Unit //Just a way to reset to a initial state
+
+     def QAlgo(epochs: Int, maxSteps: Int, epsilon: Double, alpha:Double, gamma: Double): Unit
+     /* This should implement the chosen QAlgorithm
+     It could be implemented using abstact functions and stuff but
+     it's left to be implemented by the user to make him understand better
+     how it works, the parameters are the following:
+     
+     episodes = number of games
+     maxSteps = max number of steps per game
+     epsilon  = probability og a random move between 0 and 1
+     alpha    = learning rate
+     gamma    = discount factor
+
+     The Q formula is:
+     Q(state,move) = Q(state,move) + alpha*(reward + gamma*Q(nextState,nextMove) - Q(state,move))
+     where the nextState is the state after the move has taken place and the NextMove depends
+     on how you decide to choose it.
+     */ 
+}
+
+case class Agent(char :String, dim: Int) extends Q_Agent{
+     type Move = Int
+     
      val dim_1 = dim - 1
      val world = World(dim, dim)
      val QVals = QMap(dim,dim,4)
-     world.update(0,0)(char)
+     world.randomUpdate(char)
 
      val possibleMoves = Map(0 -> "up",   1 -> "down",
      	       	       	     2 -> "left", 3 -> "right")
@@ -16,7 +46,7 @@ case class Agent(char :String, dim: Int){
      val inverseMoves = Map("up"   -> 0, "down"  -> 1,
      	 	      	    "left" -> 2, "right" -> 3)
 
-     def move(which: Int): Double = {
+     def move(which: Move): Double = {
      	 val how = possibleMoves(which)
      	 val event = world.move(how, char)
 
@@ -50,16 +80,13 @@ case class Agent(char :String, dim: Int){
 	 
      }
 
-     //def randomMove(): (Int,Int) =
-     //	 move(possibleMoves(Random.nextInt(possibleMoves.size + 1))) 
-
      def reset(): Unit = {
      	 world.reset()
-	 world.update(0,0)(char)
+	 world.randomUpdate(char)
      }
 
-     def QAlgo(epochs: Int, epsilon: Double, alpha: Double): Unit = {
-     	 for (ep <- 1 to epochs){
+     def QAlgo(episodes: Int, maxSteps: Int, epsilon: Double, alpha: Double, gamma: Double): Unit = {
+     	 for (ep <- 1 to episodes){
 	     reset()
 	     var tot_reward = 0.0
 	     var steps = 0
@@ -79,7 +106,7 @@ case class Agent(char :String, dim: Int){
 		 val (yNew,xNew) = world.where(char)
 		 val bestQScore = QVals.getBestQval(yNew,xNew)
 		 
-		 val newQScore = (1-alpha)*oldQScore + alpha*(now_score + bestQScore) 
+		 val newQScore = oldQScore + alpha*(now_score + gamma*bestQScore - oldQScore) 
 
 		 QVals.updateQval(y,x,now_move)(newQScore)
 		 
@@ -87,16 +114,17 @@ case class Agent(char :String, dim: Int){
 		 if (now_score == 5) {
 		    reset()
 		 }
-	     } while (steps < 200 & now_score != 5)
+	     } while (steps < maxSteps & now_score != 5)
 	     if (ep % 100 == 0)
 	     	println(s"Score in $ep is $tot_reward with $steps steps.")
 	 }
      }
+     
      override def toString(): String = {
      	      "I am '" + char + "' and here is my world: \n" + world.toString
      }
 
-     def showAGame(): Unit = {
+     def showAGame(maxSteps: Int): Unit = {
      	 reset()
 	 var steps = 0
 	 var score = 0.0
@@ -105,9 +133,9 @@ case class Agent(char :String, dim: Int){
 	     steps += 1
 	     val bestMove = QVals.bestMoveOn(y,x)
 	     score = move(bestMove)
-	     print(possibleMoves(bestMove) + s" score = $score")
 	     println(world)
-	 } while(steps < 30 & score!=5)
+	     Thread.sleep(500)
+	 } while(steps < maxSteps & score!=5)
 	 reset()
      }
 }

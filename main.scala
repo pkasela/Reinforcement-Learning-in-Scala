@@ -4,7 +4,7 @@ import gridworld.agent.Agent
 
 val b = Agent("A",20)
 
-b.QAlgo(1000,0.1,0.2)
+b.QAlgo(1000,100,0.1,0.2,0.8)
 
-b.showAGame
+b showAGame 20
 
